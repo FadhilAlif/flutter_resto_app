@@ -2,12 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'data/providers/restaurant_provider.dart';
 import 'data/providers/theme_provider.dart';
+import 'data/providers/favorite_provider.dart';
 import 'data/services/api_service.dart';
+import 'data/db/database_helper.dart';
+import 'data/db/db_config.dart';
 import 'ui/screens/restaurant_detail_screen.dart';
 import 'ui/screens/restaurant_list_screen.dart';
 import 'ui/screens/search_screen.dart';
+import 'ui/screens/favorite_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize database based on platform
+  await initializeDatabase();
+
   runApp(const MyApp());
 }
 
@@ -21,6 +30,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(
           create: (context) => RestaurantProvider(ApiService()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              FavoriteProvider(databaseHelper: DatabaseHelper()),
         ),
       ],
       child: Consumer<ThemeProvider>(
@@ -40,6 +53,10 @@ class MyApp extends StatelessWidget {
                 case '/search':
                   return MaterialPageRoute(
                     builder: (_) => const SearchScreen(),
+                  );
+                case '/favorite':
+                  return MaterialPageRoute(
+                    builder: (_) => const FavoriteScreen(),
                   );
                 case '/detail':
                   final restaurantId = settings.arguments as String?;

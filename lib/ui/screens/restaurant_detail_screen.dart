@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/providers/restaurant_provider.dart';
+import '../../data/providers/favorite_provider.dart';
 import '../../data/services/api_service.dart';
 import '../../data/services/api_state.dart';
 import '../widgets/loading_indicator.dart';
@@ -125,6 +126,33 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                 SliverAppBar(
                   expandedHeight: 200,
                   pinned: true,
+                  actions: [
+                    Consumer<FavoriteProvider>(
+                      builder: (context, provider, child) {
+                        return FutureBuilder<bool>(
+                          future: provider.isFavorited(restaurant.id),
+                          builder: (context, snapshot) {
+                            final isFavorited = snapshot.data ?? false;
+                            return IconButton(
+                              icon: Icon(
+                                isFavorited
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                if (isFavorited) {
+                                  provider.removeFavorite(restaurant.id);
+                                } else {
+                                  provider.addFavorite(restaurant);
+                                }
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
                   flexibleSpace: FlexibleSpaceBar(
                     title: Hero(
                       tag: 'name-${restaurant.id}',

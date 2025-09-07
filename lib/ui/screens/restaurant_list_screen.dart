@@ -50,8 +50,16 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Resto App - Fadhil'),
+        title: const Text('Restaurant App'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite_border),
+            onPressed: () => Navigator.pushNamed(context, '/favorite'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => Navigator.pushNamed(context, '/search'),
+          ),
           IconButton(
             icon: Consumer<ThemeProvider>(
               builder: (context, provider, child) => Icon(
@@ -61,29 +69,6 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
               ),
             ),
             onPressed: () => context.read<ThemeProvider>().toggleTheme(),
-          ),
-          PopupMenuButton<ColorSeed>(
-            icon: const Icon(Icons.palette),
-            itemBuilder: (context) => ColorSeed.values
-                .map(
-                  (color) => PopupMenuItem(
-                    value: color,
-                    child: Row(
-                      children: [
-                        Icon(Icons.color_lens, color: color.color),
-                        const SizedBox(width: 8),
-                        Text(color.name.toUpperCase()),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-            onSelected: (color) =>
-                context.read<ThemeProvider>().setColorSeed(color),
-          ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => Navigator.pushNamed(context, '/search'),
           ),
         ],
       ),
