@@ -2,9 +2,13 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
 
 class NotificationService {
   static const String reminderKey = 'daily_reminder_enabled';
+  static const String channelId = 'daily_reminder';
+  static const String channelName = 'Daily Reminder';
+  static const String channelDesc = 'Channel for lunch reminders';
 
   static NotificationService? _instance;
   final FlutterLocalNotificationsPlugin _notifications =
@@ -24,72 +28,115 @@ class NotificationService {
   }
 
   Future<void> _initializeNotifications() async {
-    tz.initializeTimeZones();
+    try {
+      tz.initializeTimeZones();
+      tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
+      debugPrint('Notification service initialized (Asia/Jakarta)');
 
-    const androidSettings = AndroidInitializationSettings('app_icon');
-    const iosSettings = DarwinInitializationSettings();
+      const androidSettings = AndroidInitializationSettings(
+        'notification_icon',
+      );
+      const iosSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
 
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
+      const initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      );
 
-    await _notifications.initialize(initSettings);
+      await _notifications.initialize(initSettings);
+
+      final platform = _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (platform != null) {
+        await platform.requestNotificationsPermission();
+      }
+    } catch (e) {
+      debugPrint('Error initializing notifications: $e');
+    }
   }
 
   Future<void> scheduleDailyReminder() async {
-    final isEnabled = _prefs.getBool(reminderKey) ?? false;
-    if (!isEnabled) return;
+    try {
+      final isEnabled = _prefs.getBool(reminderKey) ?? false;
+      if (!isEnabled) return;
 
-    // Batalkan jadwal sebelumnya (opsional: pakai cancel(0) kalau mau tertentu)
-    await _notifications.cancelAll();
+      await _notifications.cancelAll();
 
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      11,
-      0,
-    );
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
+      // Schedule for 11:00 AM (WIB)
+      final now = tz.TZDateTime.now(tz.local);
+      var scheduledDate = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day,
+        11, // jam 11 AM
+        0, // menit ke-00
+      );
 
-    await _notifications.zonedSchedule(
-      0,
-      'Jangan Lupa Makan Siang Yah!',
-      'Hey! Ini saatnya makan siang. Cek restoran favoritmu yuk!',
-      scheduledDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'daily_reminder',
-          'Daily Reminder',
-          channelDescription: 'Channel for lunch reminders',
-          importance: Importance.high,
-          priority: Priority.high,
+      // If time has passed, schedule for tomorrow
+      if (scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+
+      await _notifications.zonedSchedule(
+        0,
+        'Waktunya Makan!',
+        'Hey! Sudah jam 11:00, ayo cari restaurant favoritmu!',
+        scheduledDate,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            channelId,
+            channelName,
+            channelDescription: channelDesc,
+            importance: Importance.max,
+            priority: Priority.high,
+            enableLights: true,
+            enableVibration: true,
+            playSound: true,
+            icon: 'notification_icon',
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+
+      debugPrint(
+        'Daily reminder scheduled for ${scheduledDate.hour}:${scheduledDate.minute} WIB',
+      );
+    } catch (e) {
+      debugPrint('Error scheduling notification: $e');
+    }
   }
 
   Future<bool> toggleReminder() async {
-    final currentValue = _prefs.getBool(reminderKey) ?? false;
-    final newValue = !currentValue;
+    try {
+      final currentValue = _prefs.getBool(reminderKey) ?? false;
+      final newValue = !currentValue;
 
-    await _prefs.setBool(reminderKey, newValue);
+      await _prefs.setBool(reminderKey, newValue);
 
-    if (newValue) {
-      await scheduleDailyReminder();
-    } else {
-      await _notifications.cancelAll();
+      if (newValue) {
+        await scheduleDailyReminder();
+      } else {
+        await _notifications.cancelAll();
+      }
+
+      return newValue;
+    } catch (e) {
+      debugPrint('Error toggling reminder: $e');
+      return false;
     }
-
-    return newValue;
   }
 
   Future<bool> isReminderEnabled() async {
