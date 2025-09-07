@@ -11,7 +11,6 @@ import 'ui/screens/restaurant_list_screen.dart';
 import 'ui/screens/search_screen.dart';
 import 'ui/screens/favorite_screen.dart';
 import 'ui/screens/settings_screen.dart';
-import 'data/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
