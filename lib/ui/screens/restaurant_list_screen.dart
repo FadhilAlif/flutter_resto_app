@@ -57,6 +57,10 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
             onPressed: () => Navigator.pushNamed(context, '/favorite'),
           ),
           IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+          ),
+          IconButton(
             icon: const Icon(Icons.search),
             onPressed: () => Navigator.pushNamed(context, '/search'),
           ),
