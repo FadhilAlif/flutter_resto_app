@@ -13,6 +13,33 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  late NotificationService _notificationService;
+  bool _isReminderEnabled = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationSettings();
+  }
+
+  Future<void> _loadNotificationSettings() async {
+    _notificationService = await NotificationService.getInstance();
+    _isReminderEnabled = await _notificationService.isReminderEnabled();
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleReminder() async {
+    setState(() {
+      _isReminderEnabled = !_isReminderEnabled;
+    });
+    await _notificationService.toggleReminder();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -55,34 +82,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const Divider(),
           // Daily Reminder Settings
-          FutureBuilder<NotificationService>(
-            future: NotificationService.getInstance(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const CircularProgressIndicator();
-              }
-
-              final notificationService = snapshot.data!;
-              return FutureBuilder<bool>(
-                future: notificationService.isReminderEnabled(),
-                builder: (context, snapshot) {
-                  final isEnabled = snapshot.data ?? false;
-                  return ListTile(
-                    title: const Text('Lunch Reminder'),
-                    subtitle: const Text('Notify at 11:00 AM'),
-                    trailing: Switch(
-                      value: isEnabled,
-                      onChanged: (value) async {
-                        await notificationService.toggleReminder();
-                        // Rebuild to update UI
-                        if (mounted) setState(() {});
-                      },
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else
+            ListTile(
+              title: const Text('Lunch Reminder'),
+              subtitle: const Text('Notify at 11:00 AM'),
+              trailing: Switch(
+                value: _isReminderEnabled,
+                onChanged: (_) => _toggleReminder(),
+              ),
+            ),
         ],
       ),
     );
