@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'data/providers/restaurant_provider.dart';
 import 'data/providers/theme_provider.dart';
 import 'data/providers/favorite_provider.dart';
+import 'data/providers/notification_provider.dart';
 import 'data/services/api_service.dart';
 import 'data/db/database_helper.dart';
 import 'data/db/db_config.dart';
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
           create: (context) =>
               FavoriteProvider(databaseHelper: DatabaseHelper()),
         ),
+        ChangeNotifierProvider(create: (context) => NotificationProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

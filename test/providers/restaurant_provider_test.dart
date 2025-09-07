@@ -83,7 +83,3 @@ void main() {
     });
   });
 }
-
-
-// Tools :
-// mockito, build_runner, flutter_test

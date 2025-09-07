@@ -75,8 +75,8 @@ class NotificationService {
         now.year,
         now.month,
         now.day,
-        11, // jam 11 AM
-        0, // menit ke-00
+        17, // jam 11 AM
+        47, // menit ke-00
       );
 
       // If time has passed, schedule for tomorrow
@@ -107,7 +107,7 @@ class NotificationService {
             presentSound: true,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
         matchDateTimeComponents: DateTimeComponents.time,
       );
 

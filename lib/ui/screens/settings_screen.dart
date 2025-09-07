@@ -1,44 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_resto_app/data/providers/theme_provider.dart';
-import 'package:flutter_resto_app/data/services/notification_service.dart';
+import 'package:flutter_resto_app/data/providers/notification_provider.dart';
 import 'package:provider/provider.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   static const routeName = '/settings';
 
   const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  late NotificationService _notificationService;
-  bool _isReminderEnabled = false;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadNotificationSettings();
-  }
-
-  Future<void> _loadNotificationSettings() async {
-    _notificationService = await NotificationService.getInstance();
-    _isReminderEnabled = await _notificationService.isReminderEnabled();
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _toggleReminder() async {
-    setState(() {
-      _isReminderEnabled = !_isReminderEnabled;
-    });
-    await _notificationService.toggleReminder();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,17 +50,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const Divider(),
           // Daily Reminder Settings
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else
-            ListTile(
-              title: const Text('Lunch Reminder'),
-              subtitle: const Text('Notify at 11:00 AM'),
-              trailing: Switch(
-                value: _isReminderEnabled,
-                onChanged: (_) => _toggleReminder(),
-              ),
-            ),
+          Consumer<NotificationProvider>(
+            builder: (context, notificationProvider, child) {
+              if (notificationProvider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return ListTile(
+                title: const Text('Lunch Reminder'),
+                subtitle: const Text('Notify at 11:00 AM'),
+                trailing: Switch(
+                  value: notificationProvider.isReminderEnabled,
+                  onChanged: (_) => notificationProvider.toggleReminder(),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
