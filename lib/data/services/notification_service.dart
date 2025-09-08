@@ -34,7 +34,7 @@ class NotificationService {
       debugPrint('Notification service initialized (Asia/Jakarta)');
 
       const androidSettings = AndroidInitializationSettings(
-        'notification_icon',
+        '@mipmap/ic_launcher',
       );
       const iosSettings = DarwinInitializationSettings(
         requestAlertPermission: true,
@@ -47,14 +47,29 @@ class NotificationService {
         iOS: iosSettings,
       );
 
-      await _notifications.initialize(initSettings);
+      final initialized = await _notifications.initialize(initSettings);
+      debugPrint('Notification initialized: $initialized');
+
+      // Create notification channel for Android
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        channelId,
+        channelName,
+        description: channelDesc,
+        importance: Importance.high,
+        enableLights: true,
+        enableVibration: true,
+        playSound: true,
+      );
 
       final platform = _notifications
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
+
       if (platform != null) {
-        await platform.requestNotificationsPermission();
+        await platform.createNotificationChannel(channel);
+        final granted = await platform.requestNotificationsPermission();
+        debugPrint('Notification permission granted: $granted');
       }
     } catch (e) {
       debugPrint('Error initializing notifications: $e');
@@ -64,9 +79,15 @@ class NotificationService {
   Future<void> scheduleDailyReminder() async {
     try {
       final isEnabled = _prefs.getBool(reminderKey) ?? false;
-      if (!isEnabled) return;
+      debugPrint('Reminder enabled: $isEnabled');
+
+      if (!isEnabled) {
+        debugPrint('Daily reminder is disabled, skipping schedule');
+        return;
+      }
 
       await _notifications.cancelAll();
+      debugPrint('Cancelled all existing notifications');
 
       // Schedule for 11:00 AM (WIB)
       final now = tz.TZDateTime.now(tz.local);
@@ -75,31 +96,38 @@ class NotificationService {
         now.year,
         now.month,
         now.day,
-        17, // jam 11 AM
-        47, // menit ke-00
+        11, // jam 11:00 AM
+        00, // menit ke-00
       );
 
       // If time has passed, schedule for tomorrow
       if (scheduledDate.isBefore(now)) {
         scheduledDate = scheduledDate.add(const Duration(days: 1));
+        debugPrint('Time has passed, scheduling for tomorrow');
       }
+
+      debugPrint('Scheduling notification for: $scheduledDate');
 
       await _notifications.zonedSchedule(
         0,
         'Waktunya Makan!',
-        'Hey! Sudah jam 11:00, ayo cari restaurant favoritmu!',
+        'Hey! Sudah jam 11:00, ayo segera cari restaurant favoritmu!',
         scheduledDate,
         NotificationDetails(
           android: AndroidNotificationDetails(
             channelId,
             channelName,
             channelDescription: channelDesc,
-            importance: Importance.max,
+            importance: Importance.high,
             priority: Priority.high,
             enableLights: true,
             enableVibration: true,
             playSound: true,
-            icon: 'notification_icon',
+            icon: '@mipmap/ic_launcher',
+            largeIcon: const DrawableResourceAndroidBitmap(
+              '@mipmap/ic_launcher',
+            ),
+            showWhen: true,
           ),
           iOS: const DarwinNotificationDetails(
             presentAlert: true,
@@ -107,12 +135,12 @@ class NotificationService {
             presentSound: true,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.alarmClock,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
       );
 
       debugPrint(
-        'Daily reminder scheduled for ${scheduledDate.hour}:${scheduledDate.minute} WIB',
+        'Daily reminder scheduled for ${scheduledDate.hour}:${scheduledDate.minute.toString().padLeft(2, '0')} WIB',
       );
     } catch (e) {
       debugPrint('Error scheduling notification: $e');
@@ -124,11 +152,14 @@ class NotificationService {
       final currentValue = _prefs.getBool(reminderKey) ?? false;
       final newValue = !currentValue;
 
+      debugPrint('Toggling reminder from $currentValue to $newValue');
       await _prefs.setBool(reminderKey, newValue);
 
       if (newValue) {
+        debugPrint('Enabling daily reminder...');
         await scheduleDailyReminder();
       } else {
+        debugPrint('Disabling daily reminder...');
         await _notifications.cancelAll();
       }
 
@@ -141,5 +172,34 @@ class NotificationService {
 
   Future<bool> isReminderEnabled() async {
     return _prefs.getBool(reminderKey) ?? false;
+  }
+
+  // Test method to show immediate notification
+  Future<void> showTestNotification() async {
+    try {
+      await _notifications.show(
+        999,
+        'Test Notification',
+        'This is a test notification to verify setup',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            channelId,
+            channelName,
+            channelDescription: channelDesc,
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+      );
+      debugPrint('Test notification sent');
+    } catch (e) {
+      debugPrint('Error sending test notification: $e');
+    }
   }
 }

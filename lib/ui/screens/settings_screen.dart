@@ -55,13 +55,27 @@ class SettingsScreen extends StatelessWidget {
               if (notificationProvider.isLoading) {
                 return const Center(child: CircularProgressIndicator());
               }
-              return ListTile(
-                title: const Text('Lunch Reminder'),
-                subtitle: const Text('Notify at 11:00 AM'),
-                trailing: Switch(
-                  value: notificationProvider.isReminderEnabled,
-                  onChanged: (_) => notificationProvider.toggleReminder(),
-                ),
+              return Column(
+                children: [
+                  ListTile(
+                    title: const Text('Lunch Reminder'),
+                    subtitle: const Text('Notify at 11:00 AM'),
+                    trailing: Switch(
+                      value: notificationProvider.isReminderEnabled,
+                      onChanged: (_) => notificationProvider.toggleReminder(),
+                    ),
+                  ),
+                  if (notificationProvider.isReminderEnabled)
+                    ListTile(
+                      title: const Text('Test Notification'),
+                      subtitle: const Text('Try send notification now'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.notifications_active),
+                        onPressed: () =>
+                            notificationProvider.sendTestNotification(),
+                      ),
+                    ),
+                ],
               );
             },
           ),

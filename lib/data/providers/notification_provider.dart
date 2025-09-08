@@ -25,4 +25,8 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
     await _notificationService.toggleReminder();
   }
+
+  Future<void> sendTestNotification() async {
+    await _notificationService.showTestNotification();
+  }
 }
